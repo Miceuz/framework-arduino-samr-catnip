@@ -1,0 +1,6 @@
+{
+    "name": "framework-arduino-samr-catnip",
+    "description": "Arduino Wiring-based Framework (SAMR Core)",
+    "url": "https://github.com/Miceuz/framework-arduino-samr-catnip",
+    "version": "1.6.12"
+}
