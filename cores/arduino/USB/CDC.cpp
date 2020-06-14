@@ -26,7 +26,8 @@
 #if (!SAMC)
 #if defined(CDC_ONLY) || defined(CDC_HID) || defined(WITH_CDC)
 
-extern USBDevice_SAMD21G18x usbd;
+// #include "SAMD21_USBDevice.h"
+// extern USBDevice_SAMD21G18x usbd;
 
 #define CDC_SERIAL_BUFFER_SIZE	256
 
@@ -148,10 +149,10 @@ void Serial_::begin(uint32_t /* baud_count */)
 	// uart config is ignored in USB-CDC
 }
 
-void Serial_::enableInterrupt() {
-	usbd.epBank1EnableTransferComplete(CDC_ENDPOINT_ACM);
-	usbd.epBank0EnableTransferComplete(CDC_ENDPOINT_OUT);
-}
+// void Serial_::enableInterrupt() {
+// 	usbd.epBank1EnableTransferComplete(CDC_ENDPOINT_ACM);
+// 	usbd.epBank0EnableTransferComplete(CDC_ENDPOINT_OUT);
+// }
 
 void Serial_::begin(uint32_t /* baud_count */, uint8_t /* config */)
 {
