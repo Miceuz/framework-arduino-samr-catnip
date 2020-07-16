@@ -156,6 +156,12 @@ extern "C" {
 #define RFM_TCXO (40u)
 #define RFM_SWITCH (41u)
 
+#define PIN_RS485_RE (4)
+#define PIN_RS485_DE (5)
+#define PIN_RS485_EN (6)
+#define PIN_I2C_EN   (7)
+#define PIN_TEST_BUTTON (11)
+
 /*
  * Analog pins
  */
