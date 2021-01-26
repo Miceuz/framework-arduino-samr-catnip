@@ -390,7 +390,7 @@ void USBDeviceClass::init()
 	usbd.setDataSensitiveQoS();
 	usbd.setConfigSensitiveQoS();
 	usbd.setUSBDeviceMode();
-	usbd.runInStandby();
+	usbd.noRunInStandby();
 	usbd.setFullSpeed();
 
 	// Configure interrupts
