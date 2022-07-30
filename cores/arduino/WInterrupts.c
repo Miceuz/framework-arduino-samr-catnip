@@ -27,7 +27,7 @@ static voidFuncPtr ISRcallback[EXTERNAL_NUM_INTERRUPTS];
 
 #if !(SAMD51)
 static uint32_t ISRlist[EXTERNAL_NUM_INTERRUPTS];
-static uint32_t nints;  // Stores total number of attached interrupts
+static uint32_t nints; // Stores total number of attached interrupts
 #endif
 
 /* Configure I/O interrupt sources */
@@ -63,14 +63,14 @@ static void __initialize() {
   MCLK->APBAMASK.reg |= MCLK_APBAMASK_EIC;
   GCLK->PCHCTRL[GCM_EIC].reg = (GCLK_PCHCTRL_CHEN | GCLK_PCHCTRL_GEN_GCLK0);
   while ((GCLK->PCHCTRL[GCM_EIC].reg & GCLK_PCHCTRL_CHEN) != GCLK_PCHCTRL_CHEN)
-    ;  // wait for sync
+    ; // wait for sync
 #elif (SAMD51)
   GCLK->PCHCTRL[GCM_EIC].reg =
       (GCLK_PCHCTRL_CHEN |
-       GCLK_PCHCTRL_GEN_GCLK10);  // use 96MHz clock (100MHz max for EIC) from
-                                  // GCLK10, which was setup in startup.c
+       GCLK_PCHCTRL_GEN_GCLK10); // use 96MHz clock (100MHz max for EIC) from
+                                 // GCLK10, which was setup in startup.c
   while ((GCLK->PCHCTRL[GCM_EIC].reg & GCLK_PCHCTRL_CHEN) != GCLK_PCHCTRL_CHEN)
-    ;  // wait for sync
+    ; // wait for sync
 #else
 #error "WInterrupts.c: Unsupported chip"
 #endif
@@ -112,9 +112,11 @@ void attachInterrupt(uint32_t pin, voidFuncPtr callback, uint32_t mode) {
   EExt_Interrupts in = GetExtInt(pin);
 
 #if defined(EXTERNAL_INT_NMI)
-  if (in == NOT_AN_INTERRUPT || in == EXTERNAL_INT_NMI) return;
+  if (in == NOT_AN_INTERRUPT || in == EXTERNAL_INT_NMI)
+    return;
 #else
-  if (in == NOT_AN_INTERRUPT) return;
+  if (in == NOT_AN_INTERRUPT)
+    return;
 #endif
 
   if (!enabled) {
@@ -124,17 +126,9 @@ void attachInterrupt(uint32_t pin, voidFuncPtr callback, uint32_t mode) {
 
   uint32_t inMask = 1 << in;
 
-  // Enable wakeup capability on pin in case being used during sleep (WAKEUP
-  // always enabled on SAML and SAMC)
-#if (SAMD21 || SAMD11)
-  EIC->WAKEUP.reg |= (inMask);
-#endif
-#if (SAML21 || SAMR34)
-  EIC->ASYNCH.reg = (inMask);
-#endif
-
   // Assign pin to EIC
-  if (pinPeripheral(pin, PIO_EXTINT) != RET_STATUS_OK) return;
+  if (pinPeripheral(pin, PIO_EXTINT) != RET_STATUS_OK)
+    return;
 
   // Only store when there is really an ISR to call.
   // This allow for calling attachInterrupt(pin, NULL, mode), we set up all
@@ -142,7 +136,7 @@ void attachInterrupt(uint32_t pin, voidFuncPtr callback, uint32_t mode) {
   // need to check it inside the ISR.
   if (callback) {
 #if (SAMD51)
-    ISRcallback[in] = callback;  // List of callback adresses
+    ISRcallback[in] = callback; // List of callback adresses
 #else
     // Store interrupts to service in order of when they were attached
     // to allow for first come first serve handler
@@ -159,8 +153,8 @@ void attachInterrupt(uint32_t pin, voidFuncPtr callback, uint32_t mode) {
       nints++;
     }
     ISRlist[current] =
-        inMask;  // List of interrupt in order of when they were attached
-    ISRcallback[current] = callback;  // List of callback adresses
+        inMask; // List of interrupt in order of when they were attached
+    ISRcallback[current] = callback; // List of callback adresses
 #endif
 
     // Look for right CONFIG register to be addressed
@@ -171,29 +165,38 @@ void attachInterrupt(uint32_t pin, voidFuncPtr callback, uint32_t mode) {
     }
 
     // Configure the interrupt mode
-    pos = (in - (8 * config)) << 2;  // compute position (ie: 0, 4, 8, 12, ...)
+    pos = (in - (8 * config)) << 2; // compute position (ie: 0, 4, 8, 12, ...)
 
 #if (SAML21 || SAMR34 || SAMC21 || SAMD51)
-    EIC->CTRLA.reg = 0;  // disable EIC before changing CONFIG
+    EIC->CTRLA.reg = 0; // disable EIC before changing CONFIG
     while (EIC->SYNCBUSY.reg & EIC_SYNCBUSY_MASK) {
     }
+#endif
+
+    // Enable wakeup capability on pin in case being used during sleep (WAKEUP
+    // always enabled on SAML and SAMC)
+#if (SAMD21 || SAMD11)
+    EIC->WAKEUP.reg |= (inMask);
+#endif
+#if (SAML21 || SAMR34)
+    EIC->ASYNCH.reg |= (inMask);
 #endif
 
     uint32_t regConfig =
         (~(EIC_CONFIG_SENSE0_Msk << pos) &
          EIC->CONFIG[config]
-             .reg);  // copy register to variable, clearing mode bits
+             .reg); // copy register to variable, clearing mode bits
     // insert new mode and write to register (the hardware numbering for the 5
     // interrupt modes is in reverse order to the arduino numbering, so using
     // '5-mode').
     EIC->CONFIG[config].reg = (regConfig | ((5 - mode) << pos));
 
 #if (SAML21 || SAMR34)
-    EIC->CTRLA.bit.CKSEL = 1;
+    EIC->CTRLA.bit.CKSEL = 1; // CLK_ULP32K.
 #endif
 
 #if (SAML21 || SAMR34 || SAMC21 || SAMD51)
-    EIC->CTRLA.bit.ENABLE = 1;  // enable EIC
+    EIC->CTRLA.bit.ENABLE = 1; // enable EIC
     while (EIC->SYNCBUSY.reg & EIC_SYNCBUSY_MASK) {
     }
 #endif
@@ -212,9 +215,11 @@ void attachInterrupt(uint32_t pin, voidFuncPtr callback, uint32_t mode) {
 void detachInterrupt(uint32_t pin) {
   EExt_Interrupts in = GetExtInt(pin);
 #if defined(EXTERNAL_INT_NMI)
-  if (in == NOT_AN_INTERRUPT || in == EXTERNAL_INT_NMI) return;
+  if (in == NOT_AN_INTERRUPT || in == EXTERNAL_INT_NMI)
+    return;
 #else
-  if (in == NOT_AN_INTERRUPT) return;
+  if (in == NOT_AN_INTERRUPT)
+    return;
 #endif
 
   uint32_t inMask = 1 << in;
@@ -234,7 +239,8 @@ void detachInterrupt(uint32_t pin) {
       break;
     }
   }
-  if (current == nints) return;  // We didn't have it
+  if (current == nints)
+    return; // We didn't have it
 
   // Shift the reminder down
   for (; current < nints - 1; current++) {
@@ -250,83 +256,83 @@ void detachInterrupt(uint32_t pin) {
  */
 #if (SAMD51)
 void EIC_0_Handler(void) {
-  ISRcallback[0]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 0);  // Clear the interrupt
+  ISRcallback[0]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 0); // Clear the interrupt
 }
 
 void EIC_1_Handler(void) {
-  ISRcallback[1]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 1);  // Clear the interrupt
+  ISRcallback[1]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 1); // Clear the interrupt
 }
 
 void EIC_2_Handler(void) {
-  ISRcallback[2]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 2);  // Clear the interrupt
+  ISRcallback[2]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 2); // Clear the interrupt
 }
 
 void EIC_3_Handler(void) {
-  ISRcallback[3]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 3);  // Clear the interrupt
+  ISRcallback[3]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 3); // Clear the interrupt
 }
 
 void EIC_4_Handler(void) {
-  ISRcallback[4]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 4);  // Clear the interrupt
+  ISRcallback[4]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 4); // Clear the interrupt
 }
 
 void EIC_5_Handler(void) {
-  ISRcallback[5]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 5);  // Clear the interrupt
+  ISRcallback[5]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 5); // Clear the interrupt
 }
 
 void EIC_6_Handler(void) {
-  ISRcallback[6]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 6);  // Clear the interrupt
+  ISRcallback[6]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 6); // Clear the interrupt
 }
 
 void EIC_7_Handler(void) {
-  ISRcallback[7]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 7);  // Clear the interrupt
+  ISRcallback[7]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 7); // Clear the interrupt
 }
 
 void EIC_8_Handler(void) {
-  ISRcallback[8]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 8);  // Clear the interrupt
+  ISRcallback[8]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 8); // Clear the interrupt
 }
 
 void EIC_9_Handler(void) {
-  ISRcallback[9]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 9);  // Clear the interrupt
+  ISRcallback[9]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 9); // Clear the interrupt
 }
 
 void EIC_10_Handler(void) {
-  ISRcallback[10]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 10);  // Clear the interrupt
+  ISRcallback[10]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 10); // Clear the interrupt
 }
 
 void EIC_11_Handler(void) {
-  ISRcallback[11]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 11);  // Clear the interrupt
+  ISRcallback[11]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 11); // Clear the interrupt
 }
 
 void EIC_12_Handler(void) {
-  ISRcallback[12]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 12);  // Clear the interrupt
+  ISRcallback[12]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 12); // Clear the interrupt
 }
 
 void EIC_13_Handler(void) {
-  ISRcallback[13]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 13);  // Clear the interrupt
+  ISRcallback[13]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 13); // Clear the interrupt
 }
 
 void EIC_14_Handler(void) {
-  ISRcallback[14]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 14);  // Clear the interrupt
+  ISRcallback[14]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 14); // Clear the interrupt
 }
 
 void EIC_15_Handler(void) {
-  ISRcallback[15]();             // Call the callback function
-  EIC->INTFLAG.reg = (1 << 15);  // Clear the interrupt
+  ISRcallback[15]();            // Call the callback function
+  EIC->INTFLAG.reg = (1 << 15); // Clear the interrupt
 }
 
 #else
