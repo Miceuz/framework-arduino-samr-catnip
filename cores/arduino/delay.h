@@ -19,53 +19,58 @@
 #ifndef _DELAY_
 #define _DELAY_
 
-#include <stdint.h>
 #include "variant.h"
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * \brief Returns the number of milliseconds since the Arduino board began running the current program.
+ * \brief Returns the number of milliseconds since the Arduino board began
+ * running the current program.
  *
  * This number will overflow (go back to zero), after approximately 50 days.
  *
  * \return Number of milliseconds since the program started (uint32_t)
  */
-extern unsigned long millis( void ) ;
+extern unsigned long millis(void);
 
 /**
- * \brief Returns the number of microseconds since the Arduino board began running the current program.
+ * \brief Returns the number of microseconds since the Arduino board began
+ * running the current program.
  *
- * This number will overflow (go back to zero), after approximately 70 minutes. On 16 MHz Arduino boards
- * (e.g. Duemilanove and Nano), this function has a resolution of four microseconds (i.e. the value returned is
- * always a multiple of four). On 8 MHz Arduino boards (e.g. the LilyPad), this function has a resolution
- * of eight microseconds.
+ * This number will overflow (go back to zero), after approximately 70 minutes.
+ * On 16 MHz Arduino boards (e.g. Duemilanove and Nano), this function has a
+ * resolution of four microseconds (i.e. the value returned is always a multiple
+ * of four). On 8 MHz Arduino boards (e.g. the LilyPad), this function has a
+ * resolution of eight microseconds.
  *
- * \note There are 1,000 microseconds in a millisecond and 1,000,000 microseconds in a second.
+ * \note There are 1,000 microseconds in a millisecond and 1,000,000
+ * microseconds in a second.
  */
-extern unsigned long micros( void ) ;
+extern unsigned long micros(void);
 
 /**
- * \brief Pauses the program for the amount of time (in miliseconds) specified as parameter.
- * (There are 1000 milliseconds in a second.)
+ * \brief Pauses the program for the amount of time (in miliseconds) specified
+ * as parameter. (There are 1000 milliseconds in a second.)
  *
  * \param dwMs the number of milliseconds to pause (uint32_t)
  */
-extern void delay( unsigned long dwMs ) ;
+extern void delay(unsigned long dwMs);
 
+extern void fast_forward_time(uint32_t ffwd_millis);
 /**
- * \brief Pauses the program for the amount of time (in microseconds) specified as parameter.
+ * \brief Pauses the program for the amount of time (in microseconds) specified
+ * as parameter.
  *
  * \param dwUs the number of microseconds to pause (uint32_t)
  */
-static __inline__ void delayMicroseconds( unsigned int ) __attribute__((always_inline, unused)) ;
-static __inline__ void delayMicroseconds( unsigned int usec )
-{
-  if ( usec == 0 )
-  {
-    return ;
+static __inline__ void delayMicroseconds(unsigned int)
+    __attribute__((always_inline, unused));
+static __inline__ void delayMicroseconds(unsigned int usec) {
+  if (usec == 0) {
+    return;
   }
 
   /*
@@ -84,16 +89,16 @@ static __inline__ void delayMicroseconds( unsigned int usec )
 
   // VARIANT_MCK / 1000000 == cycles needed to delay 1uS
   //                     3 == cycles used in a loop
-  // Divide by 3 before multiplication with usec, so that the maximum usable usec value
-  // with the D51 @ 120MHz is at least what it was when multipling by usec first at 48MHz.
+  // Divide by 3 before multiplication with usec, so that the maximum usable
+  // usec value with the D51 @ 120MHz is at least what it was when multipling by
+  // usec first at 48MHz.
   uint32_t n = usec * ((VARIANT_MCK / 1000000) / 3);
-  __asm__ __volatile__(
-    "1:              \n"
-    "   sub %0, #1   \n" // substract 1 from %0 (n)
-    "   bne 1b       \n" // if result is not 0 jump to 1
-    : "+r" (n)           // '%0' is n variable with RW constraints
-    :                    // no input
-    :                    // no clobber
+  __asm__ __volatile__("1:              \n"
+                       "   sub %0, #1   \n" // substract 1 from %0 (n)
+                       "   bne 1b       \n" // if result is not 0 jump to 1
+                       : "+r"(n) // '%0' is n variable with RW constraints
+                       :         // no input
+                       :         // no clobber
   );
   // https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html
   // https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html#Volatile
